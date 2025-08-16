@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your Name — Photo Portfolio</title>
+  <meta name="description" content="Photography portfolio by Your Name">
+  <style>
+    :root {
+      --bg:#0f0f10; --fg:#eaeaea; --muted:#a3a3a3; --grid-gap:14px; --maxw:1200px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+      background: var(--bg); color: var(--fg);
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    }
+    header, footer { max-width: var(--maxw); margin: 24px auto; padding: 0 16px; }
+    header h1 { margin: 0 0 6px; font-size: clamp(22px, 3vw, 28px); }
+    header p  { margin: 0; color: var(--muted); }
+    .grid {
+      max-width: var(--maxw); margin: 20px auto 60px; padding: 0 16px;
+      display: grid; gap: var(--grid-gap);
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    .card { position: relative; overflow: hidden; border-radius: 12px; background: #151517; }
+    .card a { display: block; text-decoration: none; color: inherit; }
+    .thumb {
+      width: 100%; height: 100%; display: block; aspect-ratio: 4/3; object-fit: cover;
+      filter: saturate(1.05); transition: transform .25s ease, opacity .25s ease;
+    }
+    .card:hover .thumb { transform: scale(1.03); }
+    /* Lightbox */
+    dialog#lightbox {
+      width: min(92vw, 1280px); height: min(92vh, 90vh); padding: 0; border: 0; background: transparent;
+      overflow: visible;
+    }
+    dialog::backdrop { background: rgba(0,0,0,.8); }
+    .lightbox-wrap {
+      position: relative; width: 100%; height: 100%;
+      display: grid; place-items: center; padding: 8px;
+      background: transparent;
+    }
+    .lightbox-img { max-width: 100%; max-height: 100%; display: block; border-radius: 12px; }
+    .lb-btn {
+      position: absolute; top: 8px; background: rgba(20,20,22,.6); color: #fff; border: 0;
+      padding: 10px 12px; border-radius: 10px; cursor: pointer; font-size: 14px;
+      backdrop-filter: blur(6px);
+    }
+    .lb-close { right: 8px; }
+    .lb-prev { left: 8px; }
+    .lb-next { right: 56px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+    footer { color: var(--muted); font-size: 14px; text-align: center; }
+    a.minilink { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Your Name</h1>
+    <p>Minimalist photography portfolio. © <span id="y"></span></p>
+  </header>
+
+  <main class="grid" id="gallery" aria-live="polite">
+    <!--
+      HOW TO ADD PHOTOS:
+      Duplicate one of the items below. Set:
+        data-full="photos/large-file.webp"
+        img src="thumbs/small-file.webp"
+        img alt="Short descriptive alt text"
+    -->
+
+    <figure class="card">
+      <a href="photos/sample-01.webp" data-full="photos/sample-01.webp" data-index="0">
+        <img class="thumb" src="thumbs/sample-01.webp" alt="Forest tower at sunrise" loading="lazy" width="800" height="600">
+      </a>
+    </figure>
+
+    <figure class="card">
+      <a href="photos/sample-02.webp" data-full="photos/sample-02.webp" data-index="1">
+        <img class="thumb" src="thumbs/sample-02.webp" alt="Distant smoke over hills" loading="lazy" width="800" height="600">
+      </a>
+    </figure>
+
+    <figure class="card">
+      <a href="photos/sample-03.webp" data-full="photos/sample-03.webp" data-index="2">
+        <img class="thumb" src="thumbs/sample-03.webp" alt="Camera mast and blue sky" loading="lazy" width="800" height="600">
+      </a>
+    </figure>
+
+    <!-- Add more <figure> ... </figure> blocks as needed -->
+  </main>
+
+  <!-- Lightbox -->
+  <dialog id="lightbox" aria-label="Image viewer">
+    <div class="lightbox-wrap">
+      <img id="lightboxImg" class="lightbox-img" alt="">
+      <button class="lb-btn lb-close" id="closeBtn" aria-label="Close">Close</button>
+      <button class="lb-btn lb-prev" id="prevBtn" aria-label="Previous">←</button>
+      <button class="lb-btn lb-next" id="nextBtn" aria-label="Next">→</button>
+      <span id="live" class="sr-only" aria-live="assertive"></span>
+    </div>
+  </dialog>
+
+  <footer>
+    Built with plain HTML/CSS + a sprinkle of JS. <a class="minilink" href="#" id="top">Back to top</a>
+  </footer>
+
+  <script>
+    // Year
+    document.getElementById('y').textContent = new Date().getFullYear();
+
+    // Lightbox logic
+    const gallery = document.getElementById('gallery');
+    const dialog  = document.getElementById('lightbox');
+    const img     = document.getElementById('lightboxImg');
+    const live    = document.getElementById('live');
+    const closeB  = document.getElementById('closeBtn');
+    const prevB   = document.getElementById('prevBtn');
+    const nextB   = document.getElementById('nextBtn');
+
+    const nodes = Array.from(gallery.querySelectorAll('a[data-full]'));
+    let current = -1;
+
+    function openAt(i){
+      current = (i+nodes.length)%nodes.length;
+      const a = nodes[current];
+      img.src = a.dataset.full;
+      img.alt = a.querySelector('img')?.alt || '';
+      // Announce
+      live.textContent = `Image ${current+1} of ${nodes.length}`;
+      if (!dialog.open) dialog.showModal();
+    }
+    function closeLB(){ dialog.close(); img.src=''; }
+    function prev(){ openAt(current-1); }
+    function next(){ openAt(current+1); }
+
+    gallery.addEventListener('click', (e)=>{
+      const a = e.target.closest('a[data-full]');
+      if(!a) return;
+      e.preventDefault();
+      openAt(parseInt(a.dataset.index,10) || nodes.indexOf(a));
+    });
+
+    closeB.addEventListener('click', closeLB);
+    prevB.addEventListener('click', prev);
+    nextB.addEventListener('click', next);
+    dialog.addEventListener('click', (e)=>{ if(e.target===dialog) closeLB(); });
+    window.addEventListener('keydown', (e)=>{
+      if(!dialog.open) return;
+      if(e.key==='Escape') closeLB();
+      if(e.key==='ArrowLeft') prev();
+      if(e.key==='ArrowRight') next();
+    });
+
+    // Smooth "back to top"
+    document.getElementById('top').addEventListener('click', (e)=>{
+      e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'});
+    });
+  </script>
+</body>
+</html>
